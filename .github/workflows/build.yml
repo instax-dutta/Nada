@@ -29,7 +29,7 @@ jobs:
       - name: Install dependencies
         run: |
           brew update
-          brew install cmake ninja qt@6 taglib libsoxr fftw spdlog nlohmann-json pkg-config
+          brew install cmake ninja qt@6 taglib libsoxr fftw spdlog nlohmann-json catch2 pkg-config
 
       - name: Configure CMake
         run: |
