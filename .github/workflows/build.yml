@@ -1,0 +1,157 @@
+name: Build and Release
+
+on:
+  push:
+    branches: [main]
+    paths-ignore:
+      - '**.md'
+      - '.gitignore'
+      - 'LICENSE'
+  pull_request:
+    branches: [main]
+  release:
+    types: [published]
+
+env:
+  CMAKE_BUILD_TYPE: Release
+
+jobs:
+  #############################################################################
+  # macOS (Active)
+  #############################################################################
+  macos:
+    runs-on: macos-14
+    if: github.event_name == 'push' || github.event_name == 'pull_request'
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install dependencies
+        run: |
+          brew update
+          brew install cmake ninja qt@6 taglib libsoxr fftw spdlog nlohmann-json pkg-config
+
+      - name: Configure CMake
+        run: |
+          cmake -B build -G Ninja \
+            -DCMAKE_BUILD_TYPE=${{ env.CMAKE_BUILD_TYPE }} \
+            -DCMAKE_PREFIX_PATH="$(brew --prefix qt@6)"
+
+      - name: Build
+        run: cmake --build build --target nada
+
+      - name: Run tests
+        run: |
+          cmake --build build --target nada_tests
+          ./build/tests/nada_tests
+
+      - name: Package .app bundle
+        run: |
+          cd build
+          zip -r ../Nada-macOS-${{ github.sha }}.zip nada.app
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: Nada-macOS
+          path: Nada-macOS-${{ github.sha }}.zip
+
+  #############################################################################
+  # Linux (Future)
+  #############################################################################
+  # linux:
+  #   runs-on: ubuntu-24.04
+  #   if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/v')
+  #
+  #   steps:
+  #     - uses: actions/checkout@v4
+  #
+  #     - name: Install dependencies
+  #       run: |
+  #         sudo apt-get update
+  #         sudo apt-get install -y cmake ninja-build qt6-base-dev \
+  #           libtag1-dev libsoxr-dev libfftw3-dev libspdlog-dev \
+  #           nlohmann-json3-dev libpulse-dev libasound2-dev
+  #
+  #     - name: Configure CMake
+  #       run: cmake -B build -G Ninja -DCMAKE_BUILD_TYPE=${{ env.CMAKE_BUILD_TYPE }}
+  #
+  #     - name: Build
+  #       run: cmake --build build --target nada
+  #
+  #     - name: Run tests
+  #       run: |
+  #         cmake --build build --target nada_tests
+  #         ./build/tests/nada_tests
+  #
+  #     - name: Package AppImage
+  #       run: |
+  #         cd build
+  #         zip -r ../Nada-Linux-${{ github.sha }}.zip nada
+  #
+  #     - uses: actions/upload-artifact@v4
+  #       with:
+  #         name: Nada-Linux
+  #         path: Nada-Linux-${{ github.sha }}.zip
+
+  #############################################################################
+  # Windows (Future)
+  #############################################################################
+  # windows:
+  #   runs-on: windows-2022
+  #   if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/v')
+  #
+  #   steps:
+  #     - uses: actions/checkout@v4
+  #
+  #     - name: Install dependencies (vcpkg)
+  #       run: |
+  #         vcpkg install qt6 taglib soxr fftw3 spdlog nlohmann-json --triplet x64-windows
+  #
+  #     - name: Configure CMake
+  #       run: |
+  #         cmake -B build -G Ninja -DCMAKE_BUILD_TYPE=${{ env.CMAKE_BUILD_TYPE }} \
+  #           -DCMAKE_TOOLCHAIN_FILE="$env:VCPKG_INSTALLATION_ROOT/scripts/buildsystems/vcpkg.cmake"
+  #
+  #     - name: Build
+  #       run: cmake --build build --target nada
+  #
+  #     - name: Run tests
+  #       run: |
+  #         cmake --build build --target nada_tests
+  #         ./build/tests/nada_tests
+  #
+  #     - name: Package installer (NSIS)
+  #       run: |
+  #         cd build
+  #         cpack -G NSIS
+  #
+  #     - uses: actions/upload-artifact@v4
+  #       with:
+  #         name: Nada-Windows
+  #         path: build/*.exe
+
+  #############################################################################
+  # Release (runs only on version tags)
+  #############################################################################
+  release:
+    needs: [macos]
+    if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/v')
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: Nada-macOS
+
+      - name: Generate release notes
+        run: |
+          echo "## Nada ${{ github.ref_name }}" > release-notes.md
+          echo "" >> release-notes.md
+          echo "### Downloads" >> release-notes.md
+          echo "- [macOS](Nada-macOS-${{ github.sha }}.zip)" >> release-notes.md
+
+      - uses: softprops/action-gh-release@v2
+        with:
+          body_path: release-notes.md
+          files: |
+            Nada-macOS-*.zip

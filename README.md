@@ -83,16 +83,21 @@ cmake --build build --target nada
 
 ## Roadmap
 
-- [ ] WASAPI exclusive-mode output (Windows)
-- [ ] PipeWire support (Linux)
-- [ ] MPRIS integration (Linux)
-- [ ] Playlist import/export (M3U, PLS)
-- [ ] Smart playlists
+### Cross-platform
+- [x] macOS (CoreAudio) — active, CI-built
+- [ ] **Linux** (ALSA/PipeWire) — build scaffold in CI (needs AppImage packaging)
+- [ ] **Windows** (WASAPI) — build scaffold in CI (needs NSIS installer)
+- [ ] Bit-perfect output modes (WASAPI exclusive, ALSA direct)
+
+### Player features
+- [ ] Playlist import/export (M3U, PLS, XSPF)
+- [ ] Smart playlists (criteria-based auto playlists)
 - [ ] Album grid view
-- [ ] MusicBrainz metadata lookup
-- [ ] WASAPI/ALSA bit-perfect modes
+- [ ] MusicBrainz metadata lookup + tag editor
 - [ ] DSD playback
 - [ ] Android remote control
+- [ ] MPRIS integration (Linux)
+- [ ] Last.fm / ListenBrainz scrobbling
 
 ---
 
